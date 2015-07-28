@@ -243,7 +243,19 @@ helpers.createSimpleProposalOpts = function(toAddress, amount, message, signingK
   return helpers.createProposalOpts(Model.TxProposal.Types.SIMPLE, outputs, message, signingKey, feePerKb);
 };
 
-helpers.createProposalOpts = function(type, outputs, message, signingKey, feePerKb) {
+helpers.createProposalOptsWithInputs = function(toAddress, amount, message, signingKey, feePerKb, inputs) {
+  var outputs = [{
+    toAddress: toAddress,
+    amount: amount,
+  }];
+  if (_.isArray(feePerKb)) {
+    inputs = feePerKb;
+    feePerKb = null;
+  }
+  return helpers.createProposalOpts(Model.TxProposal.Types.SIMPLE, outputs, message, signingKey, feePerKb, inputs);
+};
+
+helpers.createProposalOpts = function(type, outputs, message, signingKey, feePerKb, inputs) {
   _.each(outputs, function(output) {
     output.amount = helpers.toSatoshi(output.amount);
   });
@@ -251,6 +263,7 @@ helpers.createProposalOpts = function(type, outputs, message, signingKey, feePer
     type: type,
     message: message,
     proposalSignature: null,
+    inputs: inputs || [],
   };
   if (feePerKb) opts.feePerKb = feePerKb;
 
@@ -2367,6 +2380,23 @@ describe('Wallet service', function() {
         server.createTx(txOpts, function(err, tx) {
           should.exist(err);
           err.message.should.contain('Invalid proposal type');
+          done();
+        });
+      });
+    });
+
+    it('should be able to create tx with inputs argument', function(done) {
+      helpers.stubUtxos(server, wallet, [1, 3, 2], function(utxos) {
+        var inputs = [utxos[0], utxos[2]];
+        var txOpts = helpers.createProposalOptsWithInputs('18PzpUFkFZE8zKWUPvfykkTxmB9oMR8qP7', 2.5, 'some message',
+            TestData.copayers[0].privKey_1H_0, inputs);
+        server.createTx(txOpts, function(err, tx) {
+          should.not.exist(err);
+          should.exist(tx);
+          tx.inputs.length.should.equal(2);
+          var txids = _.pluck(tx.inputs, 'txid');
+          txids.should.contain(utxos[0].txid);
+          txids.should.contain(utxos[2].txid);
           done();
         });
       });
