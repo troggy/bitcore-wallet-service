@@ -243,7 +243,7 @@ helpers.createSimpleProposalOpts = function(toAddress, amount, message, signingK
   return helpers.createProposalOpts(Model.TxProposal.Types.SIMPLE, outputs, message, signingKey, feePerKb);
 };
 
-helpers.createProposalOptsWithInputs = function(toAddress, amount, message, signingKey, feePerKb, inputs) {
+helpers.createExternalProposalOpts = function(toAddress, amount, message, signingKey, feePerKb, inputs) {
   var outputs = [{
     toAddress: toAddress,
     amount: amount,
@@ -252,7 +252,7 @@ helpers.createProposalOptsWithInputs = function(toAddress, amount, message, sign
     inputs = feePerKb;
     feePerKb = null;
   }
-  return helpers.createProposalOpts(Model.TxProposal.Types.SIMPLE, outputs, message, signingKey, feePerKb, inputs);
+  return helpers.createProposalOpts(Model.TxProposal.Types.EXTERNAL, outputs, message, signingKey, feePerKb, inputs);
 };
 
 helpers.createProposalOpts = function(type, outputs, message, signingKey, feePerKb, inputs) {
@@ -273,7 +273,7 @@ helpers.createProposalOpts = function(type, outputs, message, signingKey, feePer
     opts.amount = outputs[0].amount;
     hash = WalletUtils.getProposalHash(opts.toAddress, opts.amount,
       opts.message, opts.payProUrl);
-  } else if (type == Model.TxProposal.Types.MULTIPLEOUTPUTS) {
+  } else if (type == Model.TxProposal.Types.MULTIPLEOUTPUTS || type == Model.TxProposal.Types.EXTERNAL) {
     opts.outputs = outputs;
     var header = {
       outputs: outputs,
@@ -2388,7 +2388,7 @@ describe('Wallet service', function() {
     it('should be able to create tx with inputs argument', function(done) {
       helpers.stubUtxos(server, wallet, [1, 3, 2], function(utxos) {
         var inputs = [utxos[0], utxos[2]];
-        var txOpts = helpers.createProposalOptsWithInputs('18PzpUFkFZE8zKWUPvfykkTxmB9oMR8qP7', 2.5, 'some message',
+        var txOpts = helpers.createExternalProposalOpts('18PzpUFkFZE8zKWUPvfykkTxmB9oMR8qP7', 2.5, 'some message',
             TestData.copayers[0].privKey_1H_0, inputs);
         server.createTx(txOpts, function(err, tx) {
           should.not.exist(err);
