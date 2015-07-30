@@ -154,10 +154,12 @@ helpers.stubUtxos = function(server, wallet, amounts, cb) {
       return {
         txid: helpers.randomTXID(),
         vout: Math.floor(Math.random() * 10 + 1),
-        satoshis: helpers.toSatoshi(amount).toString(),
+        satoshis: helpers.toSatoshi(amount),
         scriptPubKey: address.getScriptPubKey(wallet.m).toBuffer().toString('hex'),
         address: address.address,
         confirmations: confirmations,
+        path: address.path,
+        publicKeys: address.publicKeys
       };
     });
     blockchainExplorer.getUnspentUtxos = function(addresses, cb) {
