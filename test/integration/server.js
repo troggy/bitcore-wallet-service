@@ -142,8 +142,7 @@ helpers.stubUtxos = function(server, wallet, amounts, cb) {
   }, function(err, addresses) {
     should.not.exist(err);
     addresses.should.not.be.empty;
-    var utxos = _.map([].concat(amounts), function(amount, i) {
-      var address = addresses[i % addresses.length];
+    var utxos = _.compact(_.map([].concat(amounts), function(amount, i) {
       var confirmations;
       if (_.isString(amount) && _.startsWith(amount, 'u')) {
         amount = parseFloat(amount.substring(1));
@@ -151,6 +150,9 @@ helpers.stubUtxos = function(server, wallet, amounts, cb) {
       } else {
         confirmations = Math.floor(Math.random() * 100 + 1);
       }
+      if (amount <= 0) return null;
+
+      var address = addresses[i % addresses.length];
       return {
         txid: helpers.randomTXID(),
         vout: Math.floor(Math.random() * 10 + 1),
@@ -159,7 +161,7 @@ helpers.stubUtxos = function(server, wallet, amounts, cb) {
         address: address.address,
         confirmations: confirmations
       };
-    });
+    }));
     blockchainExplorer.getUnspentUtxos = function(addresses, cb) {
       var selected = _.filter(utxos, function(utxo) {
         return _.contains(addresses, utxo.address);
@@ -2391,7 +2393,7 @@ describe('Wallet service', function() {
           should.not.exist(err);
           var inputs = [utxos[0], utxos[2]];
           var txOpts = helpers.createExternalProposalOpts('18PzpUFkFZE8zKWUPvfykkTxmB9oMR8qP7', 2.5, 'some message',
-              TestData.copayers[0].privKey_1H_0, inputs);
+            TestData.copayers[0].privKey_1H_0, inputs);
           server.createTx(txOpts, function(err, tx) {
             should.not.exist(err);
             should.exist(tx);
